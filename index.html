@@ -28,12 +28,17 @@
         form {
             margin: 20px 0;
         }
+
+        #source {
+            text-align: right;
+        }
     </style>
 </head>
 
 <body>
 
     <form id="form">
+        <div id="source"><a href="https://github.com/cmumford/newton-raphson.git">source</a></div>
         <label for="eq">Enter an expression:</label>
         <input type="text" id="eq" value="4sin(x) + 5cos(pi*x/2)" />
         <input type="submit" value="Draw" />
