@@ -41,20 +41,99 @@
     <div id="plot"></div>
 
     <script>
-        const xMin = -10.0;
-        const xMax = 10.0;
+        var kEpsilon = 0.000001;
+
+        function getTangentXIntercept(f, d, x) {
+            var y = f.evaluate({ x: x });
+            var m = d.evaluate({ x: x });
+            if (m === 0.0) {
+                if (y === 0.0) {
+                    return y;
+                } else {
+                    return undefined;
+                }
+            }
+            return (m * x - y) / m;
+        }
+
+        /**
+         * Find a root with |start_x| as the starting X value.
+         * Return undefined if no root can be found.
+         */
+        function findRoot(f, d, start_x, max_iters) {
+            var x;
+            for (var i = 0; i < max_iters; i++) {
+                x = getTangentXIntercept(f, d, start_x);
+                if (x === undefined) {
+                    return undefined;
+                }
+                if (x === start_x) {
+                    return x;
+                }
+                start_x = x;
+            }
+
+            return Math.abs(f.evaluate({ x: x })) <= kEpsilon ? x : undefined;
+        }
+
+        /**
+         * Find all roots (zeros) for the given function |f| which evaluates the
+         * expression |expr|.
+         **/
+        function findRoots(f, trace, xmin, xmax) {
+            const kMaxIters = 50;
+            const kMaxFinds = 200;
+            const kMinRootXSpacing = kEpsilon;
+            const delta = (xmax - xmin) / kMaxFinds;
+
+            const d = math.derivative(f, 'x');
+
+            var start_x = xmin;
+            for (var i = 0; i < kMaxFinds && start_x < xmax; i++) {
+                var root = findRoot(f, d, start_x, kMaxIters);
+                start_x += delta;
+                if (root === undefined || root < xmin || root > xmax) {
+                    continue;
+                }
+                if (!trace.x) {
+                    trace.x = [root];
+                    trace.y = [f.evaluate({ x: root })];
+                } else if (!trace.x.includes(root)) {
+                    trace.x.push(root);
+                    trace.y.push(f.evaluate({ x: root }));
+                }
+            }
+        }
+
+        /**
+         * Find the extrema for the expression |expr| within the interval [xmin, xmax].
+         * Populate |trace.x| and |trace.y| with all extrema found in the interval.
+         */
+        function findExtrema(f, trace, xmin, xmax) {
+            console.log(`findExtrema expr ${f.toString()}`);
+            const d = math.derivative(f, 'x');
+            findRoots(d, trace, xmin, xmax);
+            if (trace.x) {
+                for (var i = 0; i < trace.x.length; i++) {
+                    trace.y[i] = f.evaluate({ x: trace.x[i] });
+                }
+            }
+        }
 
         function draw() {
             try {
-                const delta = 0.05;
+                const xMin = -10.0;
+                const xMax = 10.0;
+                const delta = (xMax - xMin) / 200;
 
-                const expression = document.getElementById('eq').value
-                const expr = math.compile(expression)
+                const expression = document.getElementById('eq').value;
+                const node = math.parse(expression);
+                const f = math.compile(expression);
 
                 // Calculate the plot points.
                 const xValues = math.range(xMin, xMax, delta).toArray()
                 const yValues = xValues.map(function (x) {
-                    return expr.evaluate({ x: x })
+                    return f.evaluate({ x: x });
                 })
 
                 // Render the plot.
@@ -65,19 +144,17 @@
                     name: 'Function'
                 }
                 const roots = {
-                    x: [-3.1415, 3.14159],
-                    y: [0, 0],
                     type: 'scatter',
                     mode: 'markers',
                     name: 'Roots'
                 }
                 const extrema = {
-                    x: [1.208],
-                    y: [7.855],
                     type: 'scatter',
                     mode: 'markers',
                     name: 'Extrema'
                 }
+                findRoots(node, roots, xMin, xMax);
+                findExtrema(node, extrema, xMin, xMax);
                 const data = [funcData, roots, extrema];
                 var layout = {
                     xaxis: {
