@@ -40,30 +40,53 @@
 
     <div id="plot"></div>
 
-    <p>
-        Used plot library: <a href="https://plot.ly/javascript/">Plotly</a>
-    </p>
-
     <script>
+        const xMin = -10.0;
+        const xMax = 10.0;
+
         function draw() {
             try {
-                // compile the expression once
+                const delta = 0.05;
+
                 const expression = document.getElementById('eq').value
                 const expr = math.compile(expression)
 
-                // evaluate the expression repeatedly for different values of x
-                const xValues = math.range(-10, 10, 0.5).toArray()
+                // Calculate the plot points.
+                const xValues = math.range(xMin, xMax, delta).toArray()
                 const yValues = xValues.map(function (x) {
                     return expr.evaluate({ x: x })
                 })
 
-                // render the plot using plotly
-                const trace1 = {
+                // Render the plot.
+                const funcData = {
                     x: xValues,
                     y: yValues,
-                    type: 'scatter'
+                    type: 'scatter',
+                    name: 'Function'
                 }
-                const data = [trace1]
+                const roots = {
+                    x: [-3.1415, 3.14159],
+                    y: [0, 0],
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: 'Roots'
+                }
+                const extrema = {
+                    x: [1.208],
+                    y: [7.855],
+                    type: 'scatter',
+                    mode: 'markers',
+                    name: 'Extrema'
+                }
+                const data = [funcData, roots, extrema];
+                var layout = {
+                    xaxis: {
+                        autorange: false
+                    },
+                    yaxis: {
+                        autorange: true
+                    }
+                };
                 Plotly.newPlot('plot', data)
             }
             catch (err) {
