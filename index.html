@@ -6,6 +6,7 @@
     <title>Root Finder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-1.35.2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 
     <style>
         input[type=text] {
@@ -34,14 +35,32 @@
 
     <form id="form">
         <label for="eq">Enter an expression:</label>
-        <input type="text" id="eq" value="4 * sin(x) + 5 * cos(x/2)" />
+        <input type="text" id="eq" value="4sin(x) + 5cos(pi*x/2)" />
         <input type="submit" value="Draw" />
+
+        <table>
+            <tr>
+                <th>f(x) =</th>
+                <td>
+                    <div id="pretty"></div>
+                </td>
+            </tr>
+            <tr>
+                <th>f'(x) =</th>
+                <td>
+                    <div id="derivative"></div>
+                </td>
+            </tr>
+        </table>
     </form>
 
     <div id="plot"></div>
 
     <script>
         const kEpsilon = 0.000001;
+        const prettyElem = document.getElementById('pretty');
+        const derivativeElem = document.getElementById('derivative');
+        let parenthesis = 'keep';
 
         /**
          * Determine the X-intercept for the x-value |x| of the given
@@ -139,6 +158,19 @@
             }
         }
 
+        function updateTable(expr) {
+            pretty.innerHTML = '';
+            derivativeElem.innerHTML = '';
+
+            const mj = function (tex) {
+                return MathJax.tex2svg(tex, { em: 16, ex: 6, display: false });
+            }
+            prettyElem.appendChild(mj(math.parse(expr).toTex({ parenthesis: parenthesis })));
+
+            const d = math.derivative(expr, "x");
+            derivativeElem.appendChild(mj(d.toTex({ parenthesis: parenthesis })));
+        }
+
         function draw() {
             try {
                 const xMin = -10.0;
@@ -160,7 +192,7 @@
                     x: xValues,
                     y: yValues,
                     type: "scatter",
-                    name: "Function"
+                    name: "f(x)"
                 }
                 const roots = {
                     type: "scatter",
@@ -191,7 +223,9 @@
                         autorange: true
                     }
                 };
-                Plotly.newPlot("plot", data)
+                Plotly.newPlot("plot", data);
+
+                updateTable(expression);
             }
             catch (err) {
                 console.error(err);
