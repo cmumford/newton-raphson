@@ -33,7 +33,7 @@
 <body>
 
     <form id="form">
-        <label for="eq">Enter an equation:</label>
+        <label for="eq">Enter an expression:</label>
         <input type="text" id="eq" value="4 * sin(x) + 5 * cos(x/2)" />
         <input type="submit" value="Draw" />
     </form>
@@ -41,12 +41,20 @@
     <div id="plot"></div>
 
     <script>
-        var kEpsilon = 0.000001;
-        var y;
-        var m;
+        const kEpsilon = 0.000001;
 
-        function getTangentXIntercept(f, d, x) {
-            y = f.evaluate({ "x": x });
+        /**
+         * Determine the X-intercept for the x-value |x| of the given
+         * expression |e| and its derivative |d|.
+         *
+         * Returns undefined if there is no derivative, or a number
+         * if present.
+         */
+        function getTangentXIntercept(e, d, x) {
+            var y;
+            var m;
+
+            y = e.evaluate({ "x": x });
             m = d.evaluate({ "x": x });
             if (m === 0.0) {
                 if (y === 0.0) {
@@ -59,14 +67,16 @@
         }
 
         /**
-         * Find a root with |start_x| as the starting X value.
+         * Find a root for expression |e| with |start_x| as the starting X value.
+         * The espression derivative |d| is provided.
+         *
          * Return undefined if no root can be found.
          */
-        function findRoot(f, d, start_x, max_iters) {
+        function findRoot(e, d, start_x, max_iters) {
             var i;
             var x;
             for (i = 0; i < max_iters; i += 1) {
-                x = getTangentXIntercept(f, d, start_x);
+                x = getTangentXIntercept(e, d, start_x);
                 if (x === undefined) {
                     return undefined;
                 }
@@ -76,52 +86,55 @@
                 start_x = x;
             }
 
-            return (Math.abs(f.evaluate({ "x": x })) <= kEpsilon ? x : undefined);
+            return (Math.abs(e.evaluate({ "x": x })) <= kEpsilon ? x : undefined);
         }
 
         /**
-         * Find all roots (zeros) for the given function |f| which evaluates the
-         * expression |expr|.
+         * Find all roots (zeros) for the given expression |e| for the given
+         * closed interval [xmin, ymin].
+         *
+         * The roots will be written to |trace.x| and |trace.y| as the root
+         * points.
          **/
-        function findRoots(f, trace, xmin, xmax) {
+        function findRoots(e, trace, xmin, xmax) {
             const kMaxIters = 50;
             const kMaxFinds = 200;
             const kMinRootXSpacing = kEpsilon;
             const delta = (xmax - xmin) / kMaxFinds;
 
-            const d = math.derivative(f, "x");
+            const d = math.derivative(e, "x");
             var i;
             var root;
 
             var start_x = xmin;
             for (i = 0; i < kMaxFinds && start_x < xmax; i += 1) {
-                root = findRoot(f, d, start_x, kMaxIters);
+                root = findRoot(e, d, start_x, kMaxIters);
                 start_x += delta;
                 if (root === undefined || root < xmin || root > xmax) {
                     continue;
                 }
                 if (!trace.x) {
                     trace.x = [root];
-                    trace.y = [f.evaluate({ x: root })];
+                    trace.y = [e.evaluate({ x: root })];
                 } else if (!trace.x.includes(root)) {
                     trace.x.push(root);
-                    trace.y.push(f.evaluate({ x: root }));
+                    trace.y.push(e.evaluate({ x: root }));
                 }
             }
         }
 
         /**
-         * Find the extrema for the expression |expr| within the interval
+         * Find the extrema for the expression |e| within the closed interval
          * [xmin, xmax]. Populate |trace.x| and |trace.y| with all extrema
-         * found in the interval.
+         * found.
          */
-        function findExtrema(f, trace, xmin, xmax) {
-            const d = math.derivative(f, "x");
+        function findExtrema(e, trace, xmin, xmax) {
             var i;
-            findRoots(d, trace, xmin, xmax);
+
+            findRoots(math.derivative(e, "x"), trace, xmin, xmax);
             if (trace.x) {
                 for (i = 0; i < trace.x.length; i += 1) {
-                    trace.y[i] = f.evaluate({ x: trace.x[i] });
+                    trace.y[i] = e.evaluate({ x: trace.x[i] });
                 }
             }
         }
@@ -130,7 +143,7 @@
             try {
                 const xMin = -10.0;
                 const xMax = 10.0;
-                const delta = (xMax - xMin) / 800;
+                const delta = (xMax - xMin) / 400;
 
                 const expression = document.getElementById("eq").value;
                 const node = math.parse(expression);
@@ -159,8 +172,16 @@
                     mode: "markers",
                     name: "Extrema"
                 }
-                findRoots(node, roots, xMin, xMax);
-                findExtrema(node, extrema, xMin, xMax);
+                try {
+                    findRoots(node, roots, xMin, xMax);
+                } catch (e) {
+                    console.error(`Can't find roots: ${e}`);
+                }
+                try {
+                    findExtrema(node, extrema, xMin, xMax);
+                } catch (e) {
+                    console.error(`Can't find extrema: ${e}`);
+                }
                 const data = [funcData, roots, extrema];
                 var layout = {
                     xaxis: {
