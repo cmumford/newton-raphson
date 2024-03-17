@@ -148,11 +148,11 @@
         }
 
         /**
-         * Find the extrema for the expression |e| within the closed interval
-         * [xmin, xmax]. Populate |trace.x| and |trace.y| with all extrema
+         * Find the critical points for the expression |e| within the closed interval
+         * [xmin, xmax]. Populate |trace.x| and |trace.y| with all cps
          * found.
          */
-        function findExtrema(e, trace, xmin, xmax) {
+        function findCriticalPoints(e, trace, xmin, xmax) {
             var i;
 
             findRoots(math.derivative(e, "x"), trace, xmin, xmax);
@@ -204,10 +204,10 @@
                     mode: "markers",
                     name: "Roots"
                 }
-                const extrema = {
+                const cps = {
                     type: "scatter",
                     mode: "markers",
-                    name: "Extrema"
+                    name: "C.P.'s"
                 }
                 try {
                     findRoots(node, roots, xMin, xMax);
@@ -215,11 +215,11 @@
                     console.error(`Can't find roots: ${e}`);
                 }
                 try {
-                    findExtrema(node, extrema, xMin, xMax);
+                    findCriticalPoints(node, cps, xMin, xMax);
                 } catch (e) {
-                    console.error(`Can't find extrema: ${e}`);
+                    console.error(`Can't find cps: ${e}`);
                 }
-                const data = [funcData, roots, extrema];
+                const data = [funcData, roots, cps];
                 var layout = {
                     xaxis: {
                         autorange: false
